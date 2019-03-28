@@ -48,90 +48,80 @@ using namespace std;
 
 class Solution {
  public:
-  void reduce(int x, int y, int n,
-              vector<vector<unordered_set<int>>>& possible) {
-    possible[x][y].clear();
-    for (int i = 0; i < 9; i++) {
-      if (i != x) possible[i][y].erase(n);
-      if (i != y) possible[x][i].erase(n);
-      int x1 = i % 3 + (x / 3) * 3;
-      int y1 = i / 3 + (y / 3) * 3;
-      if (x1 != x || y1 != y) possible[x1][y1].erase(n);
-    }
-  }
+  vector<vector<bool>> cols = vector<vector<bool>>(9, vector<bool>(9, false));
+  vector<vector<bool>> rows = vector<vector<bool>>(9, vector<bool>(9, false));
+  vector<vector<bool>> zones = vector<vector<bool>>(9, vector<bool>(9, false));
+  int filled = 0;
 
-  bool solver(vector<vector<char>>& board,
-              vector<vector<unordered_set<int>>>& possible, int filled) {
-    if (filled == 81) return true;
+  bool solveSudoku(vector<vector<char>>& board, bool initialize = true) {
+    if (initialize) {
+      filled = 0;
 
-    int min_x = -1;
-    int min_y = -1;
-    int min_size = -1;
+      cols = vector<vector<bool>>(9, vector<bool>(9, false));
+      rows = vector<vector<bool>>(9, vector<bool>(9, false));
+      zones = vector<vector<bool>>(9, vector<bool>(9, false));
 
-    for (int y = 0; y < 9; y++) {
-      for (int x = 0; x < 9; x++) {
-        if (board[x][y] != '.') continue;
-
-        if (possible[x][y].empty()) return false;
-        if (possible[x][y].size() == 1) {
-          int n = *possible[x][y].begin();
-          board[x][y] = '1' + n;
-          auto org = possible;
-          reduce(x, y, n, possible);
-          if (solver(board, possible, filled + 1)) return true;
-          board[x][y] = '.';
-          possible = org;
-          return false;
-        }
-        if (min_size == -1) {
-          min_size = possible[x][y].size();
-          min_x = x;
-          min_y = y;
-        } else {
-          if (possible[x][y].size() < min_size) {
-            min_size = possible[x][y].size();
-            min_x = x;
-            min_y = y;
+      for (int y = 0; y < 9; y++) {
+        for (int x = 0; x < 9; x++) {
+          int n = board[y][x] - '1';
+          if (n >= 0 && n < 9) {
+            cols[x][n] = true;
+            rows[y][n] = true;
+            zones[(y / 3) * 3 + x / 3][n] = true;
+            filled++;
           }
         }
       }
     }
 
-    auto org = possible;
+    if (filled == 81) return true;
 
-    for (auto n : org[min_x][min_y]) {
-      board[min_x][min_y] = '1' + n;
-      reduce(min_x, min_y, n, possible);
-      if (solver(board, possible, filled + 1)) return true;
-      board[min_x][min_y] = '.';
-      possible = org;
-    }
-
-    return false;
-  }
-
-  void solveSudoku(vector<vector<char>>& board) {
-    int filled = 0;
-    for (int y = 0; y < 9; y++) {
-      for (int x = 0; x < 9; x++) {
-        if (board[x][y] != '.') filled++;
-      }
-    }
-    if (filled == 81) return;
-
-    vector<vector<unordered_set<int>>> possible(
-        9, vector<unordered_set<int>>(9, {0, 1, 2, 3, 4, 5, 6, 7, 8}));
+    vector<int> nums_to_try;
+    int min_x;
+    int min_y;
+    int min_size = -1;
 
     for (int y = 0; y < 9; y++) {
       for (int x = 0; x < 9; x++) {
-        int n = board[x][y] - '1';
+        if(board[y][x] != '.') continue;
 
-        if (n >= 0 && n < 9) {
-          reduce(x, y, n, possible);
+        vector<int> remaining;
+
+        for (int n = 0; n < 9; n++) {
+          if (!cols[x][n] && !rows[y][n] && !zones[(y / 3) * 3 + x / 3][n]) {
+            remaining.push_back(n);
+          }
+        }
+
+        if (remaining.empty()) return false;
+
+        if (min_size == -1 || remaining.size() < min_size) {
+          min_x = x;
+          min_y = y;
+          min_size = remaining.size();
+          nums_to_try = remaining;
         }
       }
     }
 
-    solver(board, possible, filled);
+    for (int n : nums_to_try) {
+      int x = min_x;
+      int y = min_y;
+      board[y][x] = '1' + n;
+      cols[x][n] = true;
+      rows[y][n] = true;
+      zones[(y / 3) * 3 + x / 3][n] = true;
+      filled++;
+
+      if (solveSudoku(board, false)) return true;
+
+      board[y][x] = '.';
+      cols[x][n] = false;
+      rows[y][n] = false;
+      zones[(y / 3) * 3 + x / 3][n] = false;
+      filled--;
+    }
+
+    return false;
   }
 };
