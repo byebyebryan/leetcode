@@ -14,64 +14,64 @@
  * Given the root of a binary tree, each node has a value from 0 to 25
  * representing the letters 'a' to 'z': a value of 0 represents 'a', a value of
  * 1 represents 'b', and so on.
- * 
+ *
  * Find the lexicographically smallest string that starts at a leaf of this
  * tree and ends at the root.
- * 
+ *
  * (As a reminder, any shorter prefix of a string is lexicographically smaller:
  * for example, "ab" is lexicographically smaller than "aba".  A leaf of a node
  * is a node that has no children.)
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  * Example 1:
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * Input: [0,1,2,3,4,3,4]
  * Output: "dba"
- * 
- * 
- * 
+ *
+ *
+ *
  * Example 2:
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * Input: [25,1,3,1,3,0,2]
  * Output: "adz"
- * 
- * 
- * 
+ *
+ *
+ *
  * Example 3:
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * Input: [2,2,1,null,1,0,null,0]
  * Output: "abc"
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * Note:
- * 
- * 
+ *
+ *
  * The number of nodes in the given tree will be between 1 and 8500.
  * Each node in the tree will have a value between 0 and 25.
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  */
 /**
  * Definition for a binary tree node.
@@ -83,52 +83,65 @@
  * };
  */
 
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
 using namespace std;
 
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
-};
-
 struct TrieNode {
-    bool end = false;
-    vector<TrieNode*> next;
+  map<int, TrieNode*> next;
 };
 
 class Solution {
-public:
-    string smallestFromLeaf(TreeNode* root) {
-        vector<vector<int>> words;
+ public:
+  string smallestFromLeaf(TreeNode* root) {
+    if (!root) return "";
 
-        fill(root, vector<int>(), words);
+    string res = "";
 
+    if (!root->left && !root->right) {
+      res += 'a' + root->val;
+      return res;
+    };
 
+    TrieNode* trie = new TrieNode();
+
+    fill(root, vector<int>(), trie);
+
+    while (trie) {
+      auto it = trie->next.begin();
+      if (it->first == -1) return res;
+      res += 'a' + it->first;
+      trie = it->second;
     }
 
-    void fill(TreeNode* node, vector<int> word, vector<vector<int>>& words){
-        if(!node) return;
+    return res;
+  }
 
-        word.push_back(node->val);
+  void fill(TreeNode* node, vector<int> word, TrieNode* trie) {
+    if (!node) return;
 
-        if(!node->left && !node->right) {
-            vector<int> r(word.size());
-            for(int i=0; i<word.size();i++){
-                r[word.size()-1-i] = word[i];
-            }
-            words.push_back(r);
-            return;
-        }
+    word.push_back(node->val);
 
-        if(node->left) {
-            fill(node->left, word, words);
+    if (!node->left && !node->right) {
+      for (int i = word.size() - 1; i >= 0; i--) {
+        int n = word[i];
+        if (trie->next.find(n) == trie->next.end()) {
+          trie->next[n] = new TrieNode();
         }
-        if(node->right) {
-            fill(node->right, word, words);
-        }
+        trie = trie->next[n];
+      }
+      trie->next[-1] = nullptr;
+      return;
     }
+
+    if (node->left) {
+      fill(node->left, word, trie);
+    }
+    if (node->right) {
+      fill(node->right, word, trie);
+    }
+  }
 };
